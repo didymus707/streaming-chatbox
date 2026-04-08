@@ -14,6 +14,8 @@ function App() {
   const [isLoading, setIsLoading] = useState(false);
   const textAreaRef = useRef<HTMLTextAreaElement>(null);
   const [messages, setMessages] = useState<Message[]>([]);
+  const abortControllerRef = useRef<AbortController | null>(null);
+  const [isStreaming, setIsStreaming] = useState(false);
 
   useEffect(() => {
     const textArea = textAreaRef.current;
@@ -21,7 +23,7 @@ function App() {
       textArea.style.height = "auto";
       textArea.style.height = `${textArea.scrollHeight}px`;
     }
-  });
+  }, [userPrompt]);
 
   useEffect(() => {
     scrollRef.current?.scrollIntoView({ behavior: "smooth" });
@@ -48,6 +50,9 @@ function App() {
   const handleSend = async () => {
     if (!userPrompt.trim()) return;
 
+    const controller = new AbortController();
+    abortControllerRef.current = controller;
+
     const userMsg: Message = {
       id: Date.now().toString(),
       role: "user",
@@ -57,6 +62,7 @@ function App() {
     setMessages((prev) => [...prev, userMsg]);
     setUserPrompt("");
     setIsLoading(true);
+    setIsStreaming(true);
 
     try {
       const response = await fetch("http://localhost:3001/api/chat", {
@@ -91,8 +97,20 @@ function App() {
           }
         }
       }
+    } catch (error: any) {
+      if (error.name === "AbortError") {
+        console.log("User Stopped the stream");
+      } else {
+        console.log("Fetch error", error);
+      }
     } finally {
       setIsLoading(false);
+    }
+  };
+
+  const handleStop = () => {
+    if (abortControllerRef.current) {
+      abortControllerRef.current.abort();
     }
   };
 
@@ -121,9 +139,15 @@ function App() {
 
         <div className="input-actions">
           <span className="model-tag">Fast v</span>
-          <button className="send-btn" onClick={handleSend}>
-            ➤
-          </button>
+          {isStreaming ? (
+            <button className="stop-btn" onClick={handleStop}>
+              ■ {/* A square stop icon */}
+            </button>
+          ) : (
+            <button className="send-btn" onClick={handleSend}>
+              ➤
+            </button>
+          )}
         </div>
       </div>
     </div>
