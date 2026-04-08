@@ -15,7 +15,7 @@ app.post("/api/chat", async (req, res) => {
   res.setHeader("Connection", "keep-alive");
 
   const stream = await openAi.chat.completions.create({
-    model: "gpt-4",
+    model: "gpt-5",
     messages: [{ role: "user", content: req.body.message }],
     stream: true,
   });
