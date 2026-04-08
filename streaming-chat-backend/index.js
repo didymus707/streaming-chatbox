@@ -20,13 +20,22 @@ app.post("/api/chat", async (req, res) => {
     stream: true,
   });
 
-  for await (const chunk of stream) {
-    console.log(chunk);
-    const content = chunk.choices[0]?.delta?.content || "";
-    res.write(`data: ${JSON.stringify({ text: content })}\n\n`);
-  }
+  req.on("close", () => {
+    console.log("Clioent disconnected, stopping AI stream....");
+    stream.controller.abort();
+  });
 
-  res.end();
+  try {
+    for await (const chunk of stream) {
+      console.log(chunk);
+      const content = chunk.choices[0]?.delta?.content || "";
+      res.write(`data: ${JSON.stringify({ text: content })}\n\n`);
+    }
+  } catch (error) {
+    console.log("stream terminated!");
+  } finally {
+    res.end();
+  }
 });
 
 app.get("/health", (_req, res) => {

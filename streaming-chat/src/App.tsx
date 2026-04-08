@@ -97,8 +97,8 @@ function App() {
           }
         }
       }
-    } catch (error: any) {
-      if (error.name === "AbortError") {
+    } catch (error) {
+      if (error instanceof Error && error.name === "AbortError") {
         console.log("User Stopped the stream");
       } else {
         console.log("Fetch error", error);
@@ -111,6 +111,12 @@ function App() {
   const handleStop = () => {
     if (abortControllerRef.current) {
       abortControllerRef.current.abort();
+    }
+  };
+  const handleKeyDown = (e: React.KeyboardEvent<HTMLTextAreaElement>) => {
+    if (e.key === "Enter" && !e.shiftKey) {
+      e.preventDefault(); // Prevent new line
+      handleSend();
     }
   };
 
@@ -134,7 +140,8 @@ function App() {
           placeholder="Type a message..."
           value={userPrompt}
           onChange={(e) => setUserPrompt(e.target.value)}
-          // onKeyDown={handleKeyDown}
+          onKeyDown={handleKeyDown}
+          disabled={isLoading}
         />
 
         <div className="input-actions">
